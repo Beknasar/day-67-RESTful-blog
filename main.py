@@ -5,7 +5,7 @@ from flask_wtf import FlaskForm
 from wtforms import StringField, SubmitField
 from wtforms.validators import DataRequired, URL
 from flask_ckeditor import CKEditor, CKEditorField
-import os
+import os, datetime
 
 
 app = Flask(__name__)
@@ -32,7 +32,7 @@ class BlogPost(db.Model):
 
 
 db.create_all()
-posts = db.session.query(BlogPost).all()
+
 
 
 # #WTForm
@@ -41,18 +41,20 @@ class CreatePostForm(FlaskForm):
     subtitle = StringField("Subtitle", validators=[DataRequired()])
     author = StringField("Your Name", validators=[DataRequired()])
     img_url = StringField("Blog Image URL", validators=[DataRequired(), URL()])
-    body = StringField("Blog Content", validators=[DataRequired()])
-    submit = SubmitField("Submit Post")
+    body = CKEditorField("body", validators=[DataRequired()])
+    submit = SubmitField("Submit")
 
 
 @app.route('/')
 def get_all_posts():
+    posts = db.session.query(BlogPost).all()
     return render_template("index.html", all_posts=posts)
 
 
 @app.route("/post/<int:index>")
 def show_post(index):
     requested_post = None
+    posts = db.session.query(BlogPost).all()
     for blog_post in posts:
         if blog_post.id == index:
             requested_post = blog_post
@@ -67,6 +69,24 @@ def about():
 @app.route("/contact")
 def contact():
     return render_template("contact.html")
+
+
+@app.route("/new-post", methods=["GET", "POST"])
+def add_new_post():
+    form = CreatePostForm()
+    if form.validate_on_submit():
+        new_post = BlogPost(
+            title=form.title.data,
+            subtitle=form.subtitle.data,
+            date=datetime.date.today().strftime('%B %d, %Y'),
+            body=form.body.data,
+            author=form.author.data,
+            img_url=form.img_url.data
+        )
+        db.session.add(new_post)
+        db.session.commit()
+        return redirect(url_for('get_all_posts'))
+    return render_template("make-post.html", form=form)
 
 
 if __name__ == "__main__":
