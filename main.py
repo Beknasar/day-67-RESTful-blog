@@ -5,14 +5,12 @@ from flask_wtf import FlaskForm
 from wtforms import StringField, SubmitField
 from wtforms.validators import DataRequired, URL
 from flask_ckeditor import CKEditor, CKEditorField
+import os
 
-
-# # Delete this code:
-# import requests
-# posts = requests.get("https://api.npoint.io/43644ec4f0013682fc0d").json()
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = '8BYkEfBA6O6donzWlSihBXox7C0sKR6b'
+app.config['SECRET_KEY'] = os.environ.get("SECRET_APP_KEY")
+app.app_context().push()
 ckeditor = CKEditor(app)
 Bootstrap(app)
 
@@ -31,6 +29,10 @@ class BlogPost(db.Model):
     body = db.Column(db.Text, nullable=False)
     author = db.Column(db.String(250), nullable=False)
     img_url = db.Column(db.String(250), nullable=False)
+
+
+db.create_all()
+posts = db.session.query(BlogPost).all()
 
 
 # #WTForm
@@ -52,7 +54,7 @@ def get_all_posts():
 def show_post(index):
     requested_post = None
     for blog_post in posts:
-        if blog_post["id"] == index:
+        if blog_post.id == index:
             requested_post = blog_post
     return render_template("post.html", post=requested_post)
 
